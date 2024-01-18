@@ -33,7 +33,7 @@ define KernelPackage/igb-intel
   TITLE:=Intel igb drivers - out of tree version
   DEPENDS:=+kmod-ptp @PCI_SUPPORT 
   CONFLICT:=kmod-igb
-  KCONFIG:=CONFIG_IGB \
+  CONFLICTS:=CONFIG_IGB \
     CONFIG_IGB_HWMON=n \
     CONFIG_IGB_DCA=n
   FILES:=$(PKG_BUILD_DIR)/src/igb.ko
