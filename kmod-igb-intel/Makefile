@@ -1,5 +1,5 @@
 #
-# Drivers Copyright (C) 2019 Intel Corporation
+# Drivers Copyright (C) 2023 Intel Corporation
 #
 # This is free software, licensed under the GNU General Public License v2.
 #
@@ -19,19 +19,10 @@ include $(INCLUDE_DIR)/package.mk
 
 PKG_UNPACK:=zcat $(DL_DIR)/$(PKG_SOURCE) | $(TAR) -C $(PKG_BUILD_DIR) --strip-components=1 -xf -
 
-MAKE_PATH:=src
-
-MAKE_VARS:= \
-  KSRC="$(LINUX_DIR)" 
-
-MAKE_OPTS:= \
-  ARCH="$(LINUX_KARCH)" \
-  CROSS_COMPILE="$(KERNEL_CROSS)" 
-
 define KernelPackage/igb-intel
   SUBMENU:=Network Devices
   TITLE:=Intel igb drivers - out of tree version
-  DEPENDS:=+kmod-ptp @PCI_SUPPORT 
+  DEPENDS:=+kmod-ptp @PCI_SUPPORT
   CONFLICTS:=kmod-igb
   KCONFIG:=CONFIG_IGB \
     CONFIG_IGB_HWMON=n \
@@ -40,14 +31,12 @@ define KernelPackage/igb-intel
   AUTOLOAD:=$(call AutoLoad,35,igb)
 endef
 
+define Build/Compile
+	+$(KERNEL_MAKE) M=$(PKG_BUILD_DIR)/src modules
+endef
+
 define KernelPackage/igb-intel/description
  Kernel modules for Intel igb out of tree drivers
- Warning: do not select the core package kmod-igb as this is an
- updated version of the igb driver that shares the same module name
 endef
 
 $(eval $(call KernelPackage,igb-intel))
-
-#echo 'CONFIG_PACKAGE_kmod-igb-intel=m' > .config
-#make defconfig
-#make package/kmod-igb-intel/compile -j1 V=s
