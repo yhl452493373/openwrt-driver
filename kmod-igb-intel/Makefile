@@ -1,53 +1,56 @@
+# SPDX-License-Identifier: GPL-2.0-only
 #
-# Drivers Copyright (C) 2019 Intel Corporation
-#
-# This is free software, licensed under the GNU General Public License v2.
-#
+# Copyright (C) 2022 ImmortalWrt.org
 
 include $(TOPDIR)/rules.mk
+include $(INCLUDE_DIR)/kernel.mk
 
-PKG_NAME:=kmod-igb-intel
-PKG_VERSION:=5.15.6
+PKG_NAME:=igb
+PKG_VERSION:=5.13.16
 PKG_RELEASE:=1
 
-PKG_SOURCE:=igb-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=http://downloads.sourceforge.net/project/e1000/igb%20stable/$(PKG_VERSION)/
-PKG_MD5SUM:=0f627bf1dd424d0cd55a4829c8c38b63
+PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
+PKG_SOURCE_URL:=@SF/e1000/igb%20stable/$(PKG_VERSION)/
+PKG_HASH:=23731b9d3630e20ecdbe6c5db06475f07c8b2d080a374635550957747db96183
 
-include $(INCLUDE_DIR)/kernel.mk
+PKG_MAINTAINER:=Tianling Shen <cnsztl@immortalwrt.org>
+PKG_LICENSE:=GPL-2.0-only
+PKG_LICENSE_FILES:=COPYING
+
+PKG_BUILD_PARALLEL:=1
+
 include $(INCLUDE_DIR)/package.mk
-
-PKG_UNPACK:=zcat $(DL_DIR)/$(PKG_SOURCE) | $(TAR) -C $(PKG_BUILD_DIR) --strip-components=1 -xf -
-
-MAKE_PATH:=src
-
-MAKE_VARS:= \
-  KSRC="$(LINUX_DIR)" 
-
-MAKE_OPTS:= \
-  ARCH="$(LINUX_KARCH)" \
-  CROSS_COMPILE="$(KERNEL_CROSS)" 
 
 define KernelPackage/igb-intel
   SUBMENU:=Network Devices
-  TITLE:=Intel igb drivers - out of tree version
-  DEPENDS:=+kmod-ptp @PCI_SUPPORT 
+  TITLE:=Intel(R) 82575/82576 PCI-Express Gigabit Ethernet support (vendor driver)
+  VERSION:=$(LINUX_VERSION)+$(PKG_VERSION)-$(BOARD)-$(PKG_RELEASE)
+  DEPENDS:=@PCI_SUPPORT +kmod-i2c-core +kmod-i2c-algo-bit +kmod-ptp +kmod-hwmon-core @TARGET_x86
   CONFLICTS:=kmod-igb
-  KCONFIG:=CONFIG_IGB \
-    CONFIG_IGB_HWMON=n \
-    CONFIG_IGB_DCA=n
   FILES:=$(PKG_BUILD_DIR)/src/igb.ko
-  AUTOLOAD:=$(call AutoLoad,35,igb)
+  AUTOLOAD:=$(call AutoProbe,igb)
 endef
 
 define KernelPackage/igb-intel/description
- Kernel modules for Intel igb out of tree drivers
- Warning: do not select the core package kmod-igb as this is an
- updated version of the igb driver that shares the same module name
+  Kernel modules for Intel(R) 82575/82576 PCI-Express Gigabit Ethernet adapters.
+endef
+
+define Build/Configure
+	( \
+		pushd $(PKG_BUILD_DIR)/src ; \
+		KSRC=$(LINUX_DIR) \
+		OUT=kcompat_generated_defs.h \
+		CONFFILE=$(LINUX_DIR)/include/generated/autoconf.h \
+		bash kcompat-generator.sh ; \
+		popd ; \
+	)
+endef
+
+define Build/Compile
+	+$(KERNEL_MAKE) $(PKG_JOBS) \
+		M=$(PKG_BUILD_DIR)/src \
+		CONFIG_IGB=m \
+		modules
 endef
 
 $(eval $(call KernelPackage,igb-intel))
-
-#echo 'CONFIG_PACKAGE_kmod-igb-intel=m' > .config
-#make defconfig
-#make package/kmod-igb-intel/compile -j1 V=s
