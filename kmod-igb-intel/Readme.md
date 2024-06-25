@@ -8,5 +8,5 @@
 
 ---
 
-## 驱动版本:5.15.6
+## 驱动版本:5.16.9
 ## 驱动源码地址:https://sourceforge.net/projects/e1000/files/igb%20stable/
